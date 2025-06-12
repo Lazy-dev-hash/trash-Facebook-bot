@@ -54,7 +54,8 @@ async function handleMessage(senderId, receivedMessage) {
 
     try {
         logger.info(`Executing command '${commandName}' for user ${senderId}`);
-        await command.execute(senderId, args, pageAccessToken);
+        // *** THIS IS THE FIX: Using the correct PAGE_ACCESS_TOKEN variable ***
+        await command.execute(senderId, args, PAGE_ACCESS_TOKEN);
     } catch (error) {
         logger.error(`Error executing command '${commandName}':`);
         logger.error(error);
