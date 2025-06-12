@@ -1,28 +1,31 @@
 const { sendMessage } = require("../handles/sendMessage");
-
-// Define your bot's prefix here so it's consistent
-const PREFIX = "!";
+const PREFIX = process.env.BOT_PREFIX || "!";
 
 module.exports = {
-    name: "help",
-    description: "Displays a list of all available commands.",
-    usage: "help",
-    category: "Core",
+  name: "help",
+  description: "Displays a list of all available commands.",
+  
+  async execute(senderId, args, pageAccessToken, commands) {
+    const helpMessage = 
+`✨ *Hello! I'm your Grow A Garden Assistant!* ✨
 
-    async execute(senderId, args, pageAccessToken) {
-        const helpMessage = 
-`✨ *Here's what I can do!* ✨
+Here's a list of things I can do. Just type a command to get started!
 
 *Core Commands*
-\`${PREFIX}help\` - Shows this help message.
+\`${PREFIX}help\`
+› Shows this help message.
 
 *Tool Commands*
-\`${PREFIX}gagstock on\` - Starts tracking Grow A Garden stock.
-\`${PREFIX}gagstock on [item]\` - Tracks a specific item (e.g., \`${PREFIX}gagstock on carrot\`).
-\`${PREFIX}gagstock off\` - Stops the stock tracker.
+\`${PREFIX}gagstock on\`
+› Starts tracking all stock changes.
 
-Just type a command to get started!`;
+\`${PREFIX}gagstock on [item]\`
+› Example: \`${PREFIX}gagstock on carrot\`
+› Tracks a specific item.
 
-        await sendMessage(senderId, { text: helpMessage }, pageAccessToken);
-    }
+\`${PREFIX}gagstock off\`
+› Stops the stock tracker.`;
+
+    await sendMessage(senderId, { text: helpMessage });
+  }
 };
