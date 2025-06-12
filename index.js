@@ -1,13 +1,12 @@
 require('dotenv').config();
 const fs = require('fs');
 const express = require('express');
-const bodyParser = 'body-parser';
 const gradient = require('gradient-string');
 const logger = require('./utils/logger');
 const { sendMessage } = require('./handles/sendMessage');
 
 const app = express();
-app.use(express.json()); // Use express.json() instead of body-parser
+app.use(express.json());
 
 // --- DYNAMIC COMMAND HANDLER SETUP ---
 app.commands = new Map();
@@ -27,13 +26,13 @@ const PORT = process.env.PORT || 3000;
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 
-// --- Webhook Verification ---
-app.get('/webhook', (req, res) => { /* ... same as before ... */ });
+// --- Webhook Verification (Unchanged) ---
+app.get('/webhook', (req, res) => { const mode = req.query['hub.mode']; const token = req.query['hub.verify_token']; const challenge = req.query['hub.challenge']; if (mode && token) { if (mode === 'subscribe' && token === VERIFY_TOKEN) { logger.success('Webhook verified successfully!'); res.status(200).send(challenge); } else { logger.error('Webhook verification failed. Tokens do not match.'); res.sendStatus(403); } } else { res.sendStatus(400); } });
 
-// --- Message Handling ---
-app.post('/webhook', (req, res) => { /* ... same as before ... */ });
+// --- Message Handling (Unchanged) ---
+app.post('/webhook', (req, res) => { const body = req.body; if (body.object === 'page') { body.entry.forEach(entry => { const webhookEvent = entry.messaging[0]; if (webhookEvent.message) { handleMessage(webhookEvent.sender.id, webhookEvent.message); } }); res.status(200).send('EVENT_RECEIVED'); } else { res.sendStatus(404); } });
 
-// --- UPGRADED COMMAND HANDLER LOGIC ---
+// --- FULLY FIXED COMMAND HANDLER LOGIC ---
 async function handleMessage(senderId, receivedMessage) {
     const PREFIX = "!"; 
     if (!receivedMessage.text || !receivedMessage.text.toLowerCase().startsWith(PREFIX)) {
@@ -43,6 +42,8 @@ async function handleMessage(senderId, receivedMessage) {
     const args = receivedMessage.text.slice(PREFIX.length).trim().split(/\s+/);
     const commandName = args.shift().toLowerCase();
     
+    if (!commandName) return;
+
     const command = app.commands.get(commandName);
 
     if (!command) {
@@ -53,13 +54,13 @@ async function handleMessage(senderId, receivedMessage) {
 
     try {
         logger.info(`Executing command '${commandName}' for user ${senderId}`);
-        await command.execute(senderId, args, PAGE_ACCESS_TOKEN);
+        await command.execute(senderId, args, pageAccessToken);
     } catch (error) {
         logger.error(`Error executing command '${commandName}':`);
         logger.error(error);
-        await sendMessage(senderId, { text: '❌ A critical error occurred while running that command.' });
+        await sendMessage(senderId, { text: '❌ A critical error occurred while running that command. The developer has been notified.' });
     }
 }
 
-// --- Server Startup ---
-app.listen(PORT, () => { /* ... same as before ... */ });
+// --- Server Startup (Unchanged) ---
+app.listen(PORT, () => { const banner = gradient.pastel.multiline(`\n===================================\n  Gagstock Facebook Bot is Running!\n      Created by Sunnel ☀️\n===================================\n`); console.log(banner); if (!VERIFY_TOKEN || !PAGE_ACCESS_TOKEN) { logger.error('FATAL ERROR: Environment variables are missing!'); logger.warn("The bot cannot connect to Facebook without required tokens."); if (!PAGE_ACCESS_TOKEN) logger.warn("  › PAGE_ACCESS_TOKEN is not set in your .env file."); if (!VERIFY_TOKEN) logger.warn("  › VERIFY_TOKEN is not set in your .env file."); logger.info("The bot will now shut down. Please add the tokens and restart."); process.exit(1); } logger.success(`Server is listening on port ${PORT}`); });
